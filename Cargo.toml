@@ -8,7 +8,6 @@ arti-client = { version = "0.42.0", features = ["onion-service-service", "tokio"
 tor-hsservice = "0.42.0"
 tor-rtcompat = "0.42.0"
 tor-cell = "0.42.0"
-# The golden ticket for Android SQLCipher cross-compilation
 rusqlite = { version = "0.36.0", features = ["bundled-sqlcipher-vendored-openssl"] }
 ed25519-dalek = { version = "2.1", features = ["rand_core", "serde"] }
 x25519-dalek = { version = "2.0", features = ["serde"] }
@@ -20,3 +19,4 @@ anyhow = "1.0"
 hkdf = "0.12"
 sha2 = "0.10"
 rand_core = "0.6"
+hex = "0.4"
