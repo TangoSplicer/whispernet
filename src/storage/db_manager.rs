@@ -7,8 +7,9 @@ pub struct DbManager {
 impl DbManager {
     pub fn new(path: &str, passphrase: &str) -> Result<Self> {
         let conn = Connection::open(path)?;
-        // Secure the database using SQLCipher
-        conn.execute(&format!("PRAGMA key = '{}';", passphrase), [])?;
+        
+        // Use execute_batch to safely ignore the confirmation row returned by SQLCipher
+        conn.execute_batch(&format!("PRAGMA key = '{}';", passphrase))?;
         
         // Create a schema for tracking handshakes and peers
         conn.execute(
