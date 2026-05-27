@@ -13,6 +13,7 @@ use tokio::sync::Mutex;
 use std::io::Write;
 
 use ed25519_dalek::{SigningKey, VerifyingKey};
+use x25519_dalek::{EphemeralSecret, PublicKey as X25519PublicKey};
 use rand_core::OsRng;
 
 use protocol::handshake::HandshakeMessage;
@@ -24,7 +25,6 @@ use network::client::P2PClient;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db = DbManager::new("whispernet.db", "secure_passphrase")?;
     
-    // --- CRYPTOGRAPHIC BOOT SEQUENCE ---
     let signing_key = match db.get_local_identity() {
         Ok(bytes) => {
             let mut sk_bytes = [0u8; 32];
@@ -59,9 +59,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let mut buf = vec![0; 2048];
                     if let Ok(n) = data_stream.read(&mut buf).await {
                         if let Ok(msg) = bincode::deserialize::<HandshakeMessage>(&buf[..n]) {
-                            println!("\n[+] Verified handshake received from peer.");
-                            let db_lock = task_db.lock().await;
-                            let _ = db_lock.log_handshake(msg.identity_key.as_bytes());
+                            
+                            // ZERO-TRUST GATE: Mathematically verify the signature before logging
+                            if msg.verify_signature() {
+                                println!("\n[+] Verified cryptographic handshake received from peer: {}", hex::encode(msg.identity_key));
+                                let db_lock = task_db.lock().await;
+                                let _ = db_lock.log_handshake(&msg.identity_key);
+                            } else {
+                                println!("\n[!] WARNING: Handshake signature invalid. Connection dropped.");
+                            }
                             print!("\nwhisper> ");
                             let _ = std::io::stdout().flush();
                         }
@@ -94,7 +100,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/help" => {
                 println!("Commands:");
                 println!("  /id                       - Show your Node Identity Key");
-                println!("  /connect <onion_address>  - Test Tor circuit to peer");
+                println!("  /connect <onion_address>  - Initiate cryptographic handshake with peer");
                 println!("  /quit                     - Shut down node");
             },
             "/id" => {
@@ -108,9 +114,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let target = parts[1];
                 println!("[*] Building Tor circuit to {}...", target);
                 
-                let dummy_payload = vec![1, 2, 3, 4]; 
-                match p2p_client.send_handshake(target, dummy_payload).await {
-                    Ok(_) => println!("[+] Connection successful. Bytes transmitted."),
+                // 1. Generate one-time x25519 ephemeral key
+                let ephemeral_secret = EphemeralSecret::random_from_rng(&mut OsRng);
+                let ephemeral_public = X25519PublicKey::from(&ephemeral_secret);
+                
+                // 2. Cryptographically sign it and construct the X3DH message
+                let handshake = HandshakeMessage::new(&signing_key, &ephemeral_public);
+                let payload = handshake.serialize();
+                
+                // 3. Transmit securely
+                match p2p_client.send_handshake(target, payload).await {
+                    Ok(_) => println!("[+] Handshake successfully signed and transmitted over Tor."),
                     Err(e) => println!("[-] Failed to connect: {}", e),
                 }
             },
