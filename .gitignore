@@ -1,0 +1,12 @@
+# Cargo build artifacts
+/target/
+
+# Application logs
+node.log
+
+# Local encrypted ledger (Never upload this!)
+whispernet.db
+whispernet.db-journal
+
+# Temporary files
+**/*.rs.bk
