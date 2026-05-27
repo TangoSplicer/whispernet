@@ -23,13 +23,11 @@ jobs:
         targets: aarch64-linux-android
 
     - name: Install cargo-ndk
-      # This tool natively bridges the C-compiler without needing a Docker container
       run: cargo install cargo-ndk
 
     - name: Build with cargo-ndk (aarch64)
-      # -t arm64-v8a maps to aarch64-linux-android
-      # -p 24 ensures compatibility with modern Android systems while providing libunwind
-      run: cargo ndk -t arm64-v8a -p 24 build --release
+      # Changed '-p 24' to '--platform 24' to prevent the package conflict panic
+      run: cargo ndk -t arm64-v8a --platform 24 build --release
 
     - name: Upload Compiled Binary
       uses: actions/upload-artifact@v4
