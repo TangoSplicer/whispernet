@@ -19,3 +19,5 @@ anyhow = "1.0"
 hkdf = "0.12"
 sha2 = "0.10"
 rand_core = "0.6"
+# Force cross-compiler to build OpenSSL statically from source for aarch64
+openssl = { version = "0.10", features = ["vendored"] }
