@@ -15,9 +15,10 @@ print_help() {
     echo "Commands:"
     echo "  setup    Install required Termux packages (gh, sqlite, procps)."
     echo "  pull     Download the latest aarch64 binary from GitHub Actions."
-    echo "  start    Launch the node in the background."
+    echo "  run      Launch the interactive WhisperNet CLI in the foreground."
+    echo "  start    Launch the node silently in the background (Daemon mode)."
     echo "  stop     Hard-kill any running WhisperNet instances."
-    echo "  logs     Tail the live output of the node."
+    echo "  logs     Tail the live output of the background node."
     echo "  wipe     Delete the local encrypted database ledger (whispernet.db)."
     echo "  status   Check if the node is currently running."
 }
@@ -45,23 +46,32 @@ case "$1" in
     pull)
         check_auth
         echo "[*] Fetching latest build from GitHub..."
-        # Download artifact to a temporary directory to avoid clutter
         TMP_DIR=$(mktemp -d)
         gh run download -n whispernet-aarch64-binary -D "$TMP_DIR"
         
-        # Move the binary to the node directory and cleanup
         mv "$TMP_DIR/whispernet" "$BINARY_PATH"
         chmod +x "$BINARY_PATH"
         rm -rf "$TMP_DIR"
         
-        echo "[*] WhisperNet binary updated and ready at $BINARY_PATH"
+        echo "[*] WhisperNet binary updated and ready."
+        ;;
+        
+    run)
+        if pgrep -f "$BINARY_PATH" > /dev/null; then
+            echo "[-] WhisperNet is already running in the background."
+            echo "    Run './whisper.sh stop' to kill it before launching the interactive CLI."
+        else
+            echo "[*] Launching WhisperNet interactive CLI..."
+            cd "$NODE_DIR" || exit
+            "$BINARY_PATH"
+        fi
         ;;
     
     start)
         if pgrep -f "$BINARY_PATH" > /dev/null; then
             echo "[-] WhisperNet is already running."
         else
-            echo "[*] Starting WhisperNet..."
+            echo "[*] Starting WhisperNet in background..."
             cd "$NODE_DIR" || exit
             nohup "$BINARY_PATH" > "$LOG_PATH" 2>&1 &
             echo "[+] Node active in the background. Use './whisper.sh logs' to monitor."
@@ -78,7 +88,7 @@ case "$1" in
         if [ -f "$LOG_PATH" ]; then
             tail -f "$LOG_PATH"
         else
-            echo "[-] No log file found. Has the node been started?"
+            echo "[-] No log file found. Has the background node been started?"
         fi
         ;;
     
