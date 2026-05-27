@@ -1,0 +1,37 @@
+name: WhisperNet aarch64 Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install Rust Toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: aarch64-linux-android
+
+    - name: Install cross
+      uses: taiki-e/install-action@cross
+
+    - name: Build with cross (aarch64)
+      # We use cross to seamlessly handle the Android NDK and C-dependencies like sqlite3
+      run: cross build --release --target aarch64-linux-android
+
+    - name: Upload Compiled Binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: whispernet-aarch64-binary
+        path: target/aarch64-linux-android/release/whispernet
+        retention-days: 7
