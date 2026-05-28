@@ -52,9 +52,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let (service, rend_requests) = network::hidden_service::launch_hidden_service(&tor_client, "whispernet").await?;
     
-    // Announce the Onion address to the terminal via the arti_client wrapper cast
+    // By-pass the Display restriction using the Debug formatter and string stripping
     if let Some(onion) = service.onion_address() {
-        println!("[+] Node Onion Address: {}", arti_client::HsId::from(onion));
+        let onion_str = format!("{:?}", onion);
+        let clean = onion_str.replace("HsId(", "").replace(")", "").replace("\"", "");
+        println!("[+] Node Onion Address: {}", clean);
     } else {
         println!("[-] Warning: Could not retrieve local Onion address.");
     }
@@ -128,7 +130,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/id" => println!("Identity: {}", hex::encode(verifying_key.as_bytes())),
             "/onion" => {
                 if let Some(onion) = service.onion_address() {
-                    println!("{}", arti_client::HsId::from(onion));
+                    let onion_str = format!("{:?}", onion);
+                    let clean = onion_str.replace("HsId(", "").replace(")", "").replace("\"", "");
+                    println!("{}", clean);
                 }
             },
             "/connect" => {
