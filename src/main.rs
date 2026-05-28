@@ -50,12 +50,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = TorClientConfig::default();
     let tor_client: TorClient<PreferredRuntime> = TorClient::create_bootstrapped(config).await?;
 
-    // We removed the underscore so we can interact with the service object
     let (service, rend_requests) = network::hidden_service::launch_hidden_service(&tor_client, "whispernet").await?;
     
-    // Announce the Onion address to the terminal
-    if let Some(onion) = service.onion_name() {
-        println!("[+] Node Onion Address: {}.onion", onion);
+    // Announce the Onion address to the terminal via the arti_client wrapper cast
+    if let Some(onion) = service.onion_address() {
+        println!("[+] Node Onion Address: {}", arti_client::HsId::from(onion));
     } else {
         println!("[-] Warning: Could not retrieve local Onion address.");
     }
@@ -128,8 +127,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         match parts[0] {
             "/id" => println!("Identity: {}", hex::encode(verifying_key.as_bytes())),
             "/onion" => {
-                if let Some(onion) = service.onion_name() {
-                    println!("{}.onion", onion);
+                if let Some(onion) = service.onion_address() {
+                    println!("{}", arti_client::HsId::from(onion));
                 }
             },
             "/connect" => {
