@@ -23,7 +23,6 @@ use tor_cell::relaycell::msg::Connected;
 use storage::db_manager::DbManager;
 use network::client::P2PClient;
 
-// A temporary hardcoded seed to initialize the ratchet across both test nodes
 const TEST_SEED: &[u8; 32] = b"whispernet-tactical-test-seed-32";
 
 #[tokio::main]
@@ -51,12 +50,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = TorClientConfig::default();
     let tor_client: TorClient<PreferredRuntime> = TorClient::create_bootstrapped(config).await?;
 
-    let (_service, rend_requests) = network::hidden_service::launch_hidden_service(&tor_client, "whispernet").await?;
+    // We removed the underscore so we can interact with the service object
+    let (service, rend_requests) = network::hidden_service::launch_hidden_service(&tor_client, "whispernet").await?;
+    
+    // Announce the Onion address to the terminal
+    if let Some(onion) = service.onion_name() {
+        println!("[+] Node Onion Address: {}.onion", onion);
+    } else {
+        println!("[-] Warning: Could not retrieve local Onion address.");
+    }
     
     let mut stream_requests = handle_rend_requests(rend_requests);
     let listener_db = Arc::clone(&shared_db);
     
-    // Initialize our receive ratchet
     let shared_ratchet = Arc::new(Mutex::new(RatchetState::new(TEST_SEED)));
     let listener_ratchet = Arc::clone(&shared_ratchet);
 
@@ -121,6 +127,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let parts: Vec<&str> = input.split_whitespace().collect();
         match parts[0] {
             "/id" => println!("Identity: {}", hex::encode(verifying_key.as_bytes())),
+            "/onion" => {
+                if let Some(onion) = service.onion_name() {
+                    println!("{}.onion", onion);
+                }
+            },
             "/connect" => {
                 if parts.len() < 2 { continue; }
                 println!("[*] Transmitting X3DH Handshake...");
