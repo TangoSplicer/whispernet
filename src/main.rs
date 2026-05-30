@@ -7,7 +7,7 @@ use arti_client::{TorClient, TorClientConfig};
 use tor_hsservice::handle_rend_requests;
 use tor_rtcompat::PreferredRuntime;
 use futures::StreamExt;
-use tokio::io::{AsyncReadExt, AsyncBufReadExt, BufReader, stdin};
+use tokio::io::{AsyncBufReadExt, BufReader, stdin};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use std::io::Write;
@@ -53,9 +53,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (service, rend_requests) = network::hidden_service::launch_hidden_service(&tor_client, "whispernet").await?;
     
     if let Some(onion) = service.onion_address() {
-        let onion_str = format!("{:?}", onion).replace("HsId(", "").replace(")", "").replace("\"", "");
+        let raw = format!("{:?}", onion);
+        let clean = raw.replace("HsId(", "").replace(")", "").replace("\"", "").replace(".onion", "");
+        let full_addr = format!("{}.onion", clean);
         let mut file = File::create("address.txt")?;
-        file.write_all(format!("{}.onion", onion_str).as_bytes())?;
+        file.write_all(full_addr.as_bytes())?;
+        println!("[+] Address written to address.txt: {}", full_addr);
     }
     
     let mut stream_requests = handle_rend_requests(rend_requests);
@@ -118,7 +121,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/id" => println!("Identity: {}", hex::encode(verifying_key.as_bytes())),
             "/onion" => {
                 if let Some(onion) = service.onion_address() {
-                    let s = format!("{:?}", onion).replace("HsId(", "").replace(")", "").replace("\"", "");
+                    let s = format!("{:?}", onion).replace("HsId(", "").replace(")", "").replace("\"", "").replace(".onion", "");
                     println!("{}.onion", s);
                 }
             },
