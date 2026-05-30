@@ -52,12 +52,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let (service, rend_requests) = network::hidden_service::launch_hidden_service(&tor_client, "whispernet").await?;
     
-    // Force full address without truncation using .to_string()
+    // FIX: Use display_as_base32() to safely get the onion string
     if let Some(onion) = service.onion_address() {
-        let full_addr = arti_client::HsId::from(onion).to_string();
+        let full_addr = format!("{}.onion", onion.as_bytes().to_base32());
         let mut file = File::create("address.txt")?;
         file.write_all(full_addr.as_bytes())?;
-        println!("[+] Full address written to address.txt: {}", full_addr);
+        println!("[+] Address written: {}", full_addr);
     }
     
     let mut stream_requests = handle_rend_requests(rend_requests);
@@ -120,7 +120,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/id" => println!("Identity: {}", hex::encode(verifying_key.as_bytes())),
             "/onion" => {
                 if let Some(onion) = service.onion_address() {
-                    println!("{}", arti_client::HsId::from(onion).to_string());
+                    println!("{}.onion", onion.as_bytes().to_base32());
                 }
             },
             "/connect" => {
