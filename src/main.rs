@@ -7,9 +7,9 @@ use arti_client::{TorClient, TorClientConfig};
 use tor_hsservice::handle_rend_requests;
 use tor_rtcompat::PreferredRuntime;
 use futures::StreamExt;
-use tokio::io::{AsyncBufReadExt, BufReader, stdin};
+use tokio::io::{AsyncReadExt, AsyncBufReadExt, BufReader, stdin};
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use std::sync::Mutex;
 use std::io::Write;
 use std::fs::File;
 
@@ -78,11 +78,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             match payload {
                                 WhisperPayload::Handshake(msg) => {
                                     if msg.verify_signature() {
-                                        let _ = task_db.lock().await.log_handshake(&msg.identity_key);
+                                        let _ = task_db.lock().unwrap().log_handshake(&msg.identity_key);
                                     }
                                 },
                                 WhisperPayload::Message { sender_identity, ciphertext } => {
-                                    let mut ratchet = task_ratchet.lock().await;
+                                    let mut ratchet = task_ratchet.lock().unwrap();
                                     if let Ok(plaintext) = ratchet.decrypt_message(&ciphertext) {
                                         if let Ok(text) = String::from_utf8(plaintext) {
                                             println!("\n[Encrypted] {}: {}", hex::encode(&sender_identity[0..4]), text);
@@ -134,7 +134,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             },
             "/msg" => {
                 if parts.len() > 2 {
-                    let mut ratchet = shared_ratchet.lock().await;
+                    let mut ratchet = shared_ratchet.lock().unwrap();
                     if let Ok(ciphertext) = ratchet.encrypt_message(parts[2..].join(" ").as_bytes()) {
                         let payload = WhisperPayload::Message {
                             sender_identity: verifying_key.to_bytes(),
