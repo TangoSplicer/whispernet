@@ -29,6 +29,7 @@ const TEST_SEED: &[u8; 32] = b"whispernet-tactical-test-seed-32";
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db = DbManager::new("whispernet.db", "secure_passphrase")?;
+    
     let signing_key = match db.get_local_identity() {
         Ok(bytes) => {
             let mut sk_bytes = [0u8; 32];
@@ -42,28 +43,66 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
     
+    let verifying_key: VerifyingKey = (&signing_key).into();
+    println!("[+] Node Identity: {}", hex::encode(verifying_key.as_bytes()));
+
+    let shared_db = Arc::new(Mutex::new(db));
     let config = TorClientConfig::default();
     let tor_client: TorClient<PreferredRuntime> = TorClient::create_bootstrapped(config).await?;
+
     let (service, rend_requests) = network::hidden_service::launch_hidden_service(&tor_client, "whispernet").await?;
     
-    // Fix: Clean address format
     if let Some(onion) = service.onion_address() {
         let onion_str = format!("{:?}", onion).replace("HsId(", "").replace(")", "").replace("\"", "");
         let mut file = File::create("address.txt")?;
         file.write_all(format!("{}.onion", onion_str).as_bytes())?;
     }
     
-    // ... Listener logic remains same ...
-    
+    let mut stream_requests = handle_rend_requests(rend_requests);
+    let listener_db = Arc::clone(&shared_db);
+    let shared_ratchet = Arc::new(Mutex::new(RatchetState::new(TEST_SEED)));
+    let listener_ratchet = Arc::clone(&shared_ratchet);
+
+    tokio::spawn(async move {
+        while let Some(request) = stream_requests.next().await {
+            if let Ok(mut data_stream) = request.accept(Connected::new_empty()).await {
+                let task_db = Arc::clone(&listener_db);
+                let task_ratchet = Arc::clone(&listener_ratchet);
+                tokio::spawn(async move {
+                    let mut buf = vec![0; 2048];
+                    if let Ok(n) = data_stream.read(&mut buf).await {
+                        if let Some(payload) = WhisperPayload::deserialize(&buf[..n]) {
+                            match payload {
+                                WhisperPayload::Handshake(msg) => {
+                                    if msg.verify_signature() {
+                                        let _ = task_db.lock().await.log_handshake(&msg.identity_key);
+                                    }
+                                },
+                                WhisperPayload::Message { sender_identity, ciphertext } => {
+                                    let mut ratchet = task_ratchet.lock().await;
+                                    if let Ok(plaintext) = ratchet.decrypt_message(&ciphertext) {
+                                        if let Ok(text) = String::from_utf8(plaintext) {
+                                            println!("\n[Encrypted] {}: {}", hex::encode(&sender_identity[0..4]), text);
+                                            print!("\nwhisper> "); let _ = std::io::stdout().flush();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    });
+
     let p2p_client = P2PClient { tor_client };
     let mut stdin_reader = BufReader::new(stdin());
     let mut line = String::new();
 
     loop {
-        print!("whisper> ");
-        std::io::stdout().flush()?;
+        print!("whisper> "); std::io::stdout().flush()?;
         line.clear();
-        let _ = stdin_reader.read_line(&mut line).await?;
+        if stdin_reader.read_line(&mut line).await? == 0 { break; }
         let parts: Vec<&str> = line.trim().split_whitespace().collect();
         if parts.is_empty() { continue; }
 
@@ -83,8 +122,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("{}.onion", s);
                 }
             },
-            "/connect" => { /* ... unchanged ... */ },
-            "/msg" => { /* ... unchanged ... */ },
+            "/connect" => {
+                if parts.len() > 1 {
+                    let ephemeral_secret = EphemeralSecret::random_from_rng(&mut OsRng);
+                    let handshake = HandshakeMessage::new(&signing_key, &X25519PublicKey::from(&ephemeral_secret));
+                    let _ = p2p_client.send_handshake(parts[1], WhisperPayload::Handshake(handshake).serialize()).await;
+                }
+            },
+            "/msg" => {
+                if parts.len() > 2 {
+                    let mut ratchet = shared_ratchet.lock().await;
+                    if let Ok(ciphertext) = ratchet.encrypt_message(parts[2..].join(" ").as_bytes()) {
+                        let payload = WhisperPayload::Message {
+                            sender_identity: verifying_key.to_bytes(),
+                            ciphertext,
+                        }.serialize();
+                        let _ = p2p_client.send_handshake(parts[1], payload).await;
+                    }
+                }
+            },
             "/quit" => break,
             _ => println!("Unknown command."),
         }
