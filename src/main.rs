@@ -10,6 +10,7 @@ use std::fs::File;
 use ed25519_dalek::{SigningKey, VerifyingKey};
 use rand_core::OsRng;
 use storage::db_manager::DbManager;
+use tor_hscrypto::pk::HsId; // Importing the type
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -36,8 +37,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (service, _rend_requests) = network::hidden_service::launch_hidden_service(&tor_client, "whispernet").await?;
     
     if let Some(onion) = service.onion_address() {
-        // Use the library's native onion stringifier
-        let addr = onion.to_string();
+        // Correct method to get the address as a string
+        let addr = format!("{}.onion", onion.to_base32());
         let mut file = File::create("address.txt")?;
         file.write_all(addr.as_bytes())?;
         println!("[+] Address written: {}", addr);
