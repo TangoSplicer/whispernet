@@ -1,8 +1,0 @@
-/data/data/com.termux/files/home/clones/whispernet/target/release/deps/enum_ordinalize-7a2f3936b129a800.d: /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enum-ordinalize-3.1.15/src/lib.rs /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enum-ordinalize-3.1.15/src/big_int_wrapper.rs /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enum-ordinalize-3.1.15/src/panic.rs /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enum-ordinalize-3.1.15/src/variant_type.rs
-
-/data/data/com.termux/files/home/clones/whispernet/target/release/deps/libenum_ordinalize-7a2f3936b129a800.so: /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enum-ordinalize-3.1.15/src/lib.rs /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enum-ordinalize-3.1.15/src/big_int_wrapper.rs /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enum-ordinalize-3.1.15/src/panic.rs /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enum-ordinalize-3.1.15/src/variant_type.rs
-
-/data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enum-ordinalize-3.1.15/src/lib.rs:
-/data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enum-ordinalize-3.1.15/src/big_int_wrapper.rs:
-/data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enum-ordinalize-3.1.15/src/panic.rs:
-/data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enum-ordinalize-3.1.15/src/variant_type.rs:

@@ -26,6 +26,13 @@ use network::client::P2PClient;
 
 const TEST_SEED: &[u8; 32] = b"whispernet-tactical-test-seed-32";
 
+// Helper to encode HsId to a string manually to bypass Display trait restriction
+fn format_onion(id: &tor_hscrypto::pk::HsId) -> String {
+    let bytes = id.as_bytes();
+    let encoded = data_encoding::BASE32_NOPAD.encode(bytes).to_lowercase();
+    format!("{}.onion", encoded)
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db = DbManager::new("whispernet.db", "secure_passphrase")?;
@@ -53,12 +60,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (service, rend_requests) = network::hidden_service::launch_hidden_service(&tor_client, "whispernet").await?;
     
     if let Some(onion) = service.onion_address() {
-        // Use the native display trait from tor_hscrypto. 
-        // We handle the .onion suffix separately.
-        let addr = format!("{}.onion", onion);
+        let addr = format_onion(&onion);
         let mut file = File::create("address.txt")?;
         file.write_all(addr.as_bytes())?;
-        println!("[+] Address written: {}", addr);
+        println!("[+] Address written to address.txt: {}", addr);
     }
     
     let mut stream_requests = handle_rend_requests(rend_requests);
@@ -121,7 +126,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/id" => println!("Identity: {}", hex::encode(verifying_key.as_bytes())),
             "/onion" => {
                 if let Some(onion) = service.onion_address() {
-                    println!("{}.onion", onion);
+                    println!("{}", format_onion(&onion));
                 }
             },
             "/connect" => {

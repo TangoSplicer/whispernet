@@ -1,9 +1,0 @@
-/data/data/com.termux/files/home/clones/whispernet/target/release/deps/web_time_compat-6982a0b4dc0b25cb.d: /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/web-time-compat-0.1.0/src/lib.rs /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/web-time-compat-0.1.0/src/stdlib.rs /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/web-time-compat-0.1.0/src/../README.md
-
-/data/data/com.termux/files/home/clones/whispernet/target/release/deps/libweb_time_compat-6982a0b4dc0b25cb.rlib: /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/web-time-compat-0.1.0/src/lib.rs /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/web-time-compat-0.1.0/src/stdlib.rs /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/web-time-compat-0.1.0/src/../README.md
-
-/data/data/com.termux/files/home/clones/whispernet/target/release/deps/libweb_time_compat-6982a0b4dc0b25cb.rmeta: /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/web-time-compat-0.1.0/src/lib.rs /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/web-time-compat-0.1.0/src/stdlib.rs /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/web-time-compat-0.1.0/src/../README.md
-
-/data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/web-time-compat-0.1.0/src/lib.rs:
-/data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/web-time-compat-0.1.0/src/stdlib.rs:
-/data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/web-time-compat-0.1.0/src/../README.md:

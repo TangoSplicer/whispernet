@@ -1,8 +1,0 @@
-/data/data/com.termux/files/home/clones/whispernet/target/release/deps/enumset_derive-d6a589398ca06317.d: /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enumset_derive-0.15.0/src/lib.rs /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enumset_derive-0.15.0/src/const_eval.rs /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enumset_derive-0.15.0/src/gen.rs /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enumset_derive-0.15.0/src/plan.rs
-
-/data/data/com.termux/files/home/clones/whispernet/target/release/deps/libenumset_derive-d6a589398ca06317.so: /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enumset_derive-0.15.0/src/lib.rs /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enumset_derive-0.15.0/src/const_eval.rs /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enumset_derive-0.15.0/src/gen.rs /data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enumset_derive-0.15.0/src/plan.rs
-
-/data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enumset_derive-0.15.0/src/lib.rs:
-/data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enumset_derive-0.15.0/src/const_eval.rs:
-/data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enumset_derive-0.15.0/src/gen.rs:
-/data/data/com.termux/files/home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/enumset_derive-0.15.0/src/plan.rs:
