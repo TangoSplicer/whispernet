@@ -36,9 +36,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (service, _rend_requests) = network::hidden_service::launch_hidden_service(&tor_client, "whispernet").await?;
     
     if let Some(onion) = service.onion_address() {
-        let bytes = onion.as_bytes();
-        let encoded = base32::encode(base32::Alphabet::RFC4648 { padding: false }, bytes).to_lowercase();
-        let addr = format!("{}.onion", encoded);
+        // Use the proper library formatting
+        let addr = format!("{}.onion", onion);
         let mut file = File::create("address.txt")?;
         file.write_all(addr.as_bytes())?;
         println!("[+] Address written: {}", addr);
