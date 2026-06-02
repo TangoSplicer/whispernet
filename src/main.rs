@@ -53,11 +53,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (service, rend_requests) = network::hidden_service::launch_hidden_service(&tor_client, "whispernet").await?;
     
     if let Some(onion) = service.onion_address() {
-        // Extract raw bytes via the standard AsRef trait and encode to unpadded Base32
         let bytes: &[u8] = onion.as_ref();
         let encoded = data_encoding::BASE32_NOPAD.encode(bytes).to_lowercase();
         let full_addr = format!("{}.onion", encoded);
-        
         let mut file = File::create("address.txt")?;
         file.write_all(full_addr.as_bytes())?;
         println!("[+] Address written to address.txt: {}", full_addr);
@@ -81,6 +79,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 WhisperPayload::Handshake(msg) => {
                                     if msg.verify_signature() {
                                         let _ = task_db.lock().unwrap().log_handshake(&msg.identity_key);
+                                        println!("\n[+] Verified handshake received from peer.");
+                                        print!("whisper> "); let _ = std::io::stdout().flush();
                                     }
                                 },
                                 WhisperPayload::Message { sender_identity, ciphertext } => {
@@ -88,7 +88,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     if let Ok(plaintext) = ratchet.decrypt_message(&ciphertext) {
                                         if let Ok(text) = String::from_utf8(plaintext) {
                                             println!("\n[Encrypted] {}: {}", hex::encode(&sender_identity[0..4]), text);
-                                            print!("\nwhisper> "); let _ = std::io::stdout().flush();
+                                            print!("whisper> "); let _ = std::io::stdout().flush();
                                         }
                                     }
                                 }
@@ -130,9 +130,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             },
             "/connect" => {
                 if parts.len() > 1 {
+                    println!("[*] Building Tor circuit to {}...", parts[1]);
+                    println!("[*] NOTE: HSDir publishing takes 1-3 minutes. If this fails, wait and retry.");
                     let ephemeral_secret = EphemeralSecret::random_from_rng(&mut OsRng);
                     let handshake = HandshakeMessage::new(&signing_key, &X25519PublicKey::from(&ephemeral_secret));
-                    let _ = p2p_client.send_handshake(parts[1], WhisperPayload::Handshake(handshake).serialize()).await;
+                    let res = p2p_client.send_handshake(parts[1], WhisperPayload::Handshake(handshake).serialize()).await;
+                    println!("[*] Handshake transmission result: {:?}", res);
+                } else {
+                    println!("Usage: /connect <onion_address>");
                 }
             },
             "/msg" => {
@@ -143,8 +148,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             sender_identity: verifying_key.to_bytes(),
                             ciphertext,
                         }.serialize();
-                        let _ = p2p_client.send_handshake(parts[1], payload).await;
+                        let res = p2p_client.send_handshake(parts[1], payload).await;
+                        println!("[*] Message transmission result: {:?}", res);
+                    } else {
+                        println!("[-] Encryption failed.");
                     }
+                } else {
+                    println!("Usage: /msg <onion_address> <text>");
                 }
             },
             "/quit" => break,
