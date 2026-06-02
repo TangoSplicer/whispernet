@@ -27,7 +27,6 @@ use network::client::P2PClient;
 
 const TEST_SEED: &[u8; 32] = b"whispernet-tactical-test-seed-32";
 
-// Generates a spec-compliant Tor V3 Onion Address
 fn encode_v3_onion(pubkey_bytes: &[u8]) -> String {
     let mut hasher = Sha3_256::new();
     hasher.update(b".onion checksum");
@@ -85,35 +84,57 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tokio::spawn(async move {
         while let Some(request) = stream_requests.next().await {
+            println!("\n[*] Inbound connection request received.");
             if let Ok(mut data_stream) = request.accept(Connected::new_empty()).await {
+                println!("[*] Connection accepted. Reading stream...");
                 let task_db = Arc::clone(&listener_db);
                 let task_ratchet = Arc::clone(&listener_ratchet);
                 tokio::spawn(async move {
                     let mut buf = vec![0; 2048];
-                    if let Ok(n) = data_stream.read(&mut buf).await {
-                        if let Some(payload) = WhisperPayload::deserialize(&buf[..n]) {
-                            match payload {
-                                WhisperPayload::Handshake(msg) => {
-                                    if msg.verify_signature() {
-                                        let _ = task_db.lock().unwrap().log_handshake(&msg.identity_key);
-                                        println!("\n[+] Verified handshake received from peer.");
-                                        print!("whisper> "); let _ = std::io::stdout().flush();
-                                    }
-                                },
-                                WhisperPayload::Message { sender_identity, ciphertext } => {
-                                    let mut ratchet = task_ratchet.lock().unwrap();
-                                    if let Ok(plaintext) = ratchet.decrypt_message(&ciphertext) {
-                                        if let Ok(text) = String::from_utf8(plaintext) {
-                                            println!("\n[Encrypted] {}: {}", hex::encode(&sender_identity[0..4]), text);
-                                            print!("whisper> "); let _ = std::io::stdout().flush();
+                    match data_stream.read(&mut buf).await {
+                        Ok(0) => eprintln!("[-] Stream closed by peer before data was sent."),
+                        Ok(n) => {
+                            println!("[*] Received {} bytes of payload.", n);
+                            match WhisperPayload::deserialize(&buf[..n]) {
+                                Some(payload) => {
+                                    match payload {
+                                        WhisperPayload::Handshake(msg) => {
+                                            println!("[*] Payload identified as Handshake.");
+                                            if msg.verify_signature() {
+                                                let _ = task_db.lock().unwrap().log_handshake(&msg.identity_key);
+                                                println!("[+] Verified handshake received from peer.");
+                                                print!("\nwhisper> "); let _ = std::io::stdout().flush();
+                                            } else {
+                                                eprintln!("[-] CRITICAL: Handshake signature verification failed!");
+                                            }
+                                        },
+                                        WhisperPayload::Message { sender_identity, ciphertext } => {
+                                            println!("[*] Payload identified as Encrypted Message.");
+                                            let mut ratchet = task_ratchet.lock().unwrap();
+                                            match ratchet.decrypt_message(&ciphertext) {
+                                                Ok(plaintext) => {
+                                                    if let Ok(text) = String::from_utf8(plaintext) {
+                                                        println!("\n[Encrypted] {}: {}", hex::encode(&sender_identity[0..4]), text);
+                                                        print!("\nwhisper> "); let _ = std::io::stdout().flush();
+                                                    } else {
+                                                        eprintln!("[-] Decrypted payload is not valid UTF-8.");
+                                                    }
+                                                },
+                                                Err(e) => eprintln!("[-] Decryption failed: {:?}", e),
+                                            }
                                         }
                                     }
-                                }
+                                },
+                                None => eprintln!("[-] Failed to deserialize payload. Data may be corrupted or version mismatched."),
                             }
-                        }
+                        },
+                        Err(e) => eprintln!("[-] Error reading from stream: {:?}", e),
                     }
                 });
+            } else {
+                eprintln!("[-] Failed to accept inbound connection.");
             }
+            print!("\nwhisper> "); let _ = std::io::stdout().flush();
         }
     });
 
