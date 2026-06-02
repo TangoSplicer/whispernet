@@ -16,6 +16,7 @@ use std::fs::File;
 use ed25519_dalek::{SigningKey, VerifyingKey};
 use x25519_dalek::{EphemeralSecret, PublicKey as X25519PublicKey};
 use rand_core::OsRng;
+use sha3::{Digest, Sha3_256};
 
 use protocol::handshake::HandshakeMessage;
 use protocol::message::WhisperPayload;
@@ -25,6 +26,22 @@ use storage::db_manager::DbManager;
 use network::client::P2PClient;
 
 const TEST_SEED: &[u8; 32] = b"whispernet-tactical-test-seed-32";
+
+// Generates a spec-compliant Tor V3 Onion Address
+fn encode_v3_onion(pubkey_bytes: &[u8]) -> String {
+    let mut hasher = Sha3_256::new();
+    hasher.update(b".onion checksum");
+    hasher.update(pubkey_bytes);
+    hasher.update(&[0x03]);
+    let checksum = hasher.finalize();
+
+    let mut payload = [0u8; 35];
+    payload[..32].copy_from_slice(pubkey_bytes);
+    payload[32..34].copy_from_slice(&checksum[..2]);
+    payload[34] = 0x03;
+
+    data_encoding::BASE32_NOPAD.encode(&payload).to_lowercase()
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -54,7 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     if let Some(onion) = service.onion_address() {
         let bytes: &[u8] = onion.as_ref();
-        let encoded = data_encoding::BASE32_NOPAD.encode(bytes).to_lowercase();
+        let encoded = encode_v3_onion(bytes);
         let full_addr = format!("{}.onion", encoded);
         let mut file = File::create("address.txt")?;
         file.write_all(full_addr.as_bytes())?;
@@ -124,7 +141,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/onion" => {
                 if let Some(onion) = service.onion_address() {
                     let bytes: &[u8] = onion.as_ref();
-                    let encoded = data_encoding::BASE32_NOPAD.encode(bytes).to_lowercase();
+                    let encoded = encode_v3_onion(bytes);
                     println!("{}.onion", encoded);
                 }
             },
